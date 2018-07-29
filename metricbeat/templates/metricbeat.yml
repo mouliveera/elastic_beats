@@ -1,0 +1,12 @@
+# Ansible: metricbeat | templates/metricbeat.yml
+#Allows metricbeat to enable/disable modules
+metricbeat.config.modules:
+  path: /etc/metricbeat/modules.d/*.yml
+  reload.enabled: true
+  reload.period: 10s
+
+
+## Output configuration
+output:
+  elasticsearch:
+    hosts: ['sherlock:9200']

@@ -1,0 +1,13 @@
+{
+  "description": "Pipeline for parsing {{item.1}} logs",
+  "processors": [
+    ],
+  "on_failure": [{
+    "set": {
+      "field": "error.message",
+{% raw -%}
+      "value": "{{ _ingest.on_failure_message }}" 
+{% endraw %}
+    }
+  }]
+}

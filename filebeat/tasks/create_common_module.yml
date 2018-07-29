@@ -1,0 +1,80 @@
+---
+#tasks for create custom/common modules
+- name: create module directory in /usr/share/filebeat/module
+  file:
+    path: "/usr/share/filebeat/module/{{item}}"
+    state: directory
+    mode: 0755
+  become: true
+  with_items: "{{filebeat_standard_fragments}}"
+
+- name: create sub-directories
+  file:
+    path: "/usr/share/filebeat/module/{{item.0}}/log/{{item.1}}"
+    state: directory
+    mode: 0755
+  become: true
+  with_nested:
+    - "{{filebeat_standard_fragments}}"
+    - "{{filebeat_directory}}"
+
+- name: copy custom module log.yml
+  template: 
+    src: "{{item.0}}"
+    dest: "/usr/share/filebeat/module/{{item.1}}/log/config/log.yml"
+    mode: 0644
+    owner: root
+    group: root
+  become: true
+  with_nested:
+    - [ 'log.yml' ]
+    - "{{filebeat_standard_fragments}}"
+
+- name: copy custom pipeline.json
+  template: 
+    src: "{{item.0}}"
+    dest: "/usr/share/filebeat/module/{{item.1}}/log/ingest/pipeline.json"
+    mode: 0644
+    owner: root
+    group: root
+  become: true
+  with_nested:
+    - [ 'pipeline.json' ]
+    - "{{filebeat_standard_fragments}}"
+
+- name: copy custom module.yml
+  template: 
+    src: "{{item.0}}"
+    dest: "/usr/share/filebeat/module/{{item.1}}/module.yml"
+    mode: 0644
+    owner: root
+    group: root
+  become: true
+  with_nested:
+    - [ 'common_modules/module.yml' ]
+    - "{{filebeat_standard_fragments}}"
+
+- name: copy custom module file
+  template: 
+    src: "{{item.0}}"
+    dest: "/etc/filebeat/modules.d/{{item.1}}.yml"
+    mode: 0644
+    owner: root
+    group: root
+  become: true
+  with_nested:
+    - [ 'common_modules/custom_module.yml' ]
+    - "{{filebeat_standard_fragments}}"
+
+- name: copy custom manifest.yml
+  template: 
+    src: "{{item.0}}"
+    dest: "/usr/share/filebeat/module/{{item.1}}/log/manifest.yml"
+    mode: 0644
+    owner: root
+    group: root
+  become: true
+  with_nested:
+    - [ 'common_modules/manifests/manifest.yml' ]
+    - "{{filebeat_standard_fragments}}"   
+...

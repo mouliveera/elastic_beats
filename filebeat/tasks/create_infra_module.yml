@@ -1,0 +1,80 @@
+---
+#tasks for create infra module
+- name: create module directory in /usr/share/filebeat/module
+  file:
+    path: "/usr/share/filebeat/module/{{item}}"
+    state: directory
+    mode: 0755
+  become: true
+  with_items: "{{filebeat_fragments}}"
+
+- name: create sub-directories:config
+  file:
+    path: "/usr/share/filebeat/module/{{item.0}}/log/{{item.1}}"
+    state: directory
+    mode: 0755
+  become: true
+  with_nested:
+    - "{{filebeat_fragments}}"
+    - "{{filebeat_directory}}"
+
+- name: copy infra module log.yml
+  template: 
+    src: "{{item.0}}"
+    dest: "/usr/share/filebeat/module/{{item.1}}/log/config/log.yml"
+    mode: 0644
+    owner: root
+    group: root
+  become: true
+  with_nested:
+    - [ 'log.yml' ]
+    - "{{filebeat_fragments}}"
+
+- name: copy infra module pipeline.json
+  template:
+    src: "{{item.0}}"
+    dest: "/usr/share/filebeat/module/{{item.1}}/log/ingest/pipeline.json"
+    mode: 0644
+    owner: root
+    group: root
+  become: true
+  with_nested:
+    - [ 'pipeline.json' ]
+    - "{{filebeat_fragments}}"
+
+- name: copy infra module manifest.yml
+  template:
+    src: "{{item.0}}"
+    dest: "/usr/share/filebeat/module/{{item.1}}/log/manifest.yml"
+    mode: 0644
+    owner: root
+    group: root
+  become: true
+  with_nested:
+    - [ 'infra_modules/manifests/manifest.yml' ]
+    - "{{filebeat_fragments}}"
+
+- name: copy infra module.yml
+  template:
+    src: "{{item.0}}"
+    dest: "/usr/share/filebeat/module/{{item.1}}/module.yml"
+    mode: 0644
+    owner: root
+    group: root
+  become: true
+  with_nested:
+    - [ 'infra_modules/module.yml' ]
+    - "{{filebeat_fragments}}"
+
+- name: copy infra module file
+  template:
+    src: "{{item.0}}"
+    dest: "/etc/filebeat/modules.d/{{item.1}}.yml"
+    mode: 0644
+    owner: root
+    group: root
+  become: true
+  with_nested:
+    - [ 'infra_modules/custom_module.yml' ]
+    - "{{filebeat_fragments}}"
+...

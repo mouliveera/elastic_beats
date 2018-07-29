@@ -1,0 +1,113 @@
+---
+# tasks file for filebeat
+- name: debug
+  debug:
+    var: "{{item}}"
+    verbosity: 1
+  tags:
+  - filebeat-debug
+  with_items:
+  - filebeat
+  - filebeat_modules
+  - filebeat_fragments
+  - filebeat_system_module
+  - filebeat_standard_fragments
+
+- name: add elastic key 
+  apt_key: 
+    url: "https://artifacts.elastic.co/GPG-KEY-elasticsearch" 
+  become: true
+  register: add_keys
+
+- name: add elastic repository 
+  apt_repository: 
+    repo: "deb https://artifacts.elastic.co/packages/6.x/apt stable main" 
+    filename: "elastic-6.x" 
+  retries: 5
+  delay: 5
+  until: add_repo | success
+  register: add_repo
+  become: true
+
+- name: install filebeat
+  include: roles/apt-install/tasks/main.yml
+  vars:
+    packages:
+    - filebeat={{filebeat_version}}
+    state: present
+  become: true
+
+- name: enable filebeat elasticsearch output
+  lineinfile:
+    dest: /etc/filebeat/filebeat.yml
+    regexp:  ':9200'
+    line: "  hosts: ['sherlock:9200']"
+    backup: yes
+  become: true
+
+- name: enable filebeat system modules
+  command: filebeat modules enable {{item}}
+  become: true
+  with_items:
+  - "{{filebeat_system_module}}"
+  when:
+  - filebeat_system_module is defined
+  notify: restart filebeat
+
+- name: convert the timestamp to UTC on system module
+  lineinfile:
+    path: /etc/filebeat/modules.d/system.yml
+    regexp: 'convert_timezone'
+    line: '    var.convert_timezone: true'
+    backup: yes
+    firstmatch: yes
+  become: true
+  notify: restart filebeat
+
+- name: enable filebeat modules
+  command: filebeat modules enable {{item}}
+  become: true
+  with_items:
+  - "{{filebeat_modules}}"
+  when: 
+  - filebeat_modules is defined
+  notify: restart filebeat
+
+- name: update redis port on redis module
+  lineinfile:
+    dest: /etc/filebeat/modules.d/redis.yml
+    regexp:  'hosts:*'
+    line: '    var.hosts: ["localhost:9696"]'
+    backup: yes
+  become: true
+  when: "filebeat_modules is defined and 'redis' in filebeat_modules"
+  notify: restart filebeat
+
+- name: copy redis prod key on redis module
+  lineinfile:
+    dest: /etc/filebeat/modules.d/redis.yml
+    regexp: 'password:'
+    line: "    var.password: {{redis_password}}"
+    insertafter: EOF
+  when:
+    - redis_password is defined
+  become: true
+  notify: restart filebeat 
+
+- name: enable filebeat prospectors
+  lineinfile:
+    dest: /etc/filebeat/filebeat.yml
+    regexp: '  enabled:'
+    line: '  enabled: true'
+    firstmatch: yes
+  become: true
+  notify: restart filebeat
+
+- name: enable common filebeat modules
+  include: roles/filebeat/tasks/create_common_module.yml
+  when: filebeat_standard_fragments is defined
+
+- name: enable custome filebeat modules
+  include: roles/filebeat/tasks/create_infra_module.yml
+  when: filebeat_fragments is defined
+...

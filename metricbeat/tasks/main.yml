@@ -1,0 +1,102 @@
+---
+- name: debug
+  debug:
+    var: "{{item}}"
+    verbosity: 1
+  tags:
+  - metricbeat-debug
+  with_items:
+  - metricbeat_modules
+
+- name:  add keys
+  apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+  become: true
+  register: add_keys
+
+- name: add elasticstack repository
+  apt_repository:
+    repo: "deb https://artifacts.elastic.co/packages/6.x/apt stable main"
+    state: present
+  retries: 5
+  delay: 5
+  until: add_repo | success
+  register: add_repo
+  become: true
+
+- name: install metricbeat
+  include: roles/apt-install/tasks/main.yml
+  vars:
+    packages:
+    - metricbeat={{metricbeat_version}}
+    state: present
+  become: true
+
+- name: enable metricbeat elasticsearch output
+  lineinfile:
+    dest: /etc/metricbeat/metricbeat.yml
+    regexp:  ':9200'
+    line: "  hosts: ['sherlock:9200']"
+    backup: yes
+  become: true
+
+- name: enable metricbeat system modules
+  command: metricbeat modules enable {{item}}
+  become: true
+  with_items:
+  - "{{metricbeat_system_module}}"
+  when:
+  - metricbeat_system_module is defined
+  notify: restart metricbeat
+
+
+- name: enable metricbeat modules
+  command: metricbeat modules enable {{item}}
+  become: true
+  with_items:
+  - "{{metricbeat_modules}}"
+  notify: restart metricbeat
+
+- name: update redis port
+  lineinfile:
+    dest: /etc/metricbeat/modules.d/redis.yml
+    regexp:  'hosts:*'
+    line: '  hosts: ["127.0.0.1:9696"]'
+    backup: yes
+  become: true
+  with_items: "{{metricbeat_modules}}"
+  when:
+  - item == 'redis'
+  notify: restart metricbeat
+
+- name: copy redis prod key
+  lineinfile:
+    dest: /etc/metricbeat/modules.d/redis.yml
+    line: "  password: {{redis_password}}"
+    insertafter: EOF
+  when:
+    - redis_password is defined
+  become: true
+  notify: restart metricbeat 
+
+- name: update postgresql user info
+  lineinfile:
+    dest: /etc/metricbeat/modules.d/postgresql.yml
+    regexp: "{{item.regexp}}"
+    line: "{{item.line}}"
+    backup: yes
+  become: true
+  when: "'postgresql' in metricbeat_modules"
+  notify: restart metricbeat
+  with_items:
+  - name: update postgres username
+    regexp: 'username:*'
+    line: '  username: postgres'
+  - name: update postgres password
+    regexp: 'password:*'
+    line: '  password: Eatcarrots4goodeyes'
+  - name: update postgres host info
+    regexp: 'hosts:*'
+    line: "{% for host in groups['r4e-rds-postgres'] %}  hosts: ['postgres://{{host}}:5432{% if not loop.last %}, {% endif %}'] {%endfor%}"
+  notify: restart metricbeat
+...

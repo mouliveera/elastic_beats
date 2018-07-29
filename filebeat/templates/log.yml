@@ -1,0 +1,9 @@
+type: log
+{% raw -%}
+paths:
+{{ range $i, $path := .paths }}
+- {{$path}}
+{{  end }}
+{% endraw %}
+exclude_files: [".gz$"]
+exclude_lines: ["^\\s+[\\-`('.|_]"]  # drop asciiart lines\n

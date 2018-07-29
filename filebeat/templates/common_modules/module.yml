@@ -1,0 +1,2 @@
+- id: Filebeat-{{item.1}}-dashboard
+  file: Filebeat-{{item.1}}.json

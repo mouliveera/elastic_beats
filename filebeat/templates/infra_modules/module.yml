@@ -1,0 +1,2 @@
+- id: Filebeat-{{filebeat_fragments[0]}}-dashboard
+  file: Filebeat-{{filebeat_fragments[0]}}.json

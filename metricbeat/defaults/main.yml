@@ -1,0 +1,20 @@
+---
+# change this to `latest` to always get the most up to date version
+metricbeat_install_state: present
+
+# modules configuration
+metricbeat_modules: []
+
+# output configuration
+metricbeat_output:
+  elasticsearch:
+    hosts:
+      - sherlock:9200
+
+# general/global config options
+metricbeat_general_config: {}
+
+metricbeat_system_module: system
+
+# Version
+metricbeat_version: 6.2.4

@@ -1,0 +1,15 @@
+---
+filebeat: false
+filebeat_system_module: system
+filebeat_directory: 
+    - config
+    - ingest
+filebeat_standard_fragments:
+  - ansible
+  - aptitude
+  - mail
+  - dpkg
+
+# Version
+filebeat_version: 6.3.2
+...
